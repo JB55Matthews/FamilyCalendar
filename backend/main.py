@@ -1,8 +1,8 @@
 from flask import Flask
-from config import DevelopmentConfig
-from extensions import db, migrate, jwt
+from .config import DevelopmentConfig
+from .extensions import db, migrate, jwt
 
-from routes.family_route import bp as family_bp
+from .routes.family_route import bp as family_bp
 
 
 def create_app():
