@@ -10,7 +10,7 @@ class Member(db.Model):
     role = db.Column(db.String(20), nullable=False) # "parent" or "child"
     password = db.Column(db.String(200))
 
-    famiy = db.relationship("Family", back_populates="members")
+    family = db.relationship("Family", back_populates="members")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -23,3 +23,4 @@ class Member(db.Model):
     @property
     def has_password(self):
         return self.password_hash is not None
+    

@@ -1,59 +1,113 @@
-from flask import request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
-from flask_smorest import Blueprint, abort
-from sqlalchemy.exc import SQLAlchemyError
+from flask import Blueprint, request, jsonify, session
 from ..models.family_model import Family
 from ..models.member_model import Member
 from ..extensions import db
 
-bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+bp = Blueprint("auths", __name__, url_prefix="/api/auth")
 
 @bp.route("/register", methods=["POST"])
 def register():
+    data = request.get_json()
+    if not data or "email" not in data or "password" not in data:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    if Family.query.filter_by(email=data["email"]).first():
+        return jsonify({"error": "Email already registered"}), 409
+    
     try:
-        data = request.json()
-        required = ["email", "password"]
-
-        if not all(key in data for key in required):
-            abort(400, message="Missing fields")
-
-        if Family.query.filter_by(email=data["email"]).first():
-            abort(409, message="Email already registered")
-        
         family = Family(email=data["email"])
         family.set_password(data["password"])
-
         db.session.add(family)
+        db.session.flush()
         db.session.commit()
-    except SQLAlchemyError:
+        
+        session["family_id"] = family.id
+        session["logged_in"] = True
+        
+        return jsonify({"success": True,"family_id": family.id}), 201
+        
+    except Exception as e:
         db.session.rollback()
-        abort(500, message="Internal error while creating family")
+        return jsonify({"error": "Registration failed"}), 500
     
-    access_token = create_access_token(identity={
-        "family_id": family.id
-    })
-
-    return jsonify({
-        "access_token": access_token,
-        "family_id": family.id
-    })
 
 @bp.route("/login", methods=["POST"])
 def login():
-    try:
-        data = request.json()
-        family = Family.query.filter_by(email=data["email"]).first()
-        if (family is None) or (not family.check_password(data["password"])):
-            abort(401, message="Invalid credentials")
-    except SQLAlchemyError:
-        abort(500, "Internal server error")
+    data = request.get_json()
+    if not data or "email" not in data or "password" not in data:
+        return jsonify({"error": "Missing email or password"}), 400
     
-    access_token = create_access_token(identity={
+    family = Family.query.filter_by(email=data["email"]).first()
+    
+    if not family or not family.check_password(data["password"]):
+        return jsonify({"error": "Invalid credentials"}), 401
+    
+    session["family_id"] = family.id
+    session["logged_in"] = True
+    
+    return jsonify({
+        "success": True,
         "family_id": family.id
     })
 
+@bp.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"success": True})
+
+@bp.route("/verify-member", methods=["POST"])
+def verify_member():
+    if "family_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    data = request.get_json()
+    if "member_id" not in data:
+        return jsonify({"error": "Missing member ID"}), 400
+    
+    member = Member.query.filter_by(
+        id=data["member_id"],
+        family_id=session["family_id"]).first()
+    
+    if not member:
+        return jsonify({"error": "Member not found"}), 404
+    
+    if member.role == "parent" and member.has_password:
+        if "password" not in data:
+            return jsonify({"error": "Password required", "requires_password": True}), 401
+        
+        if not member.check_password(data["password"]):
+            return jsonify({"error": "Invalid password"}), 401
+    
+    # Set member session
+    session["member_id"] = member.id
+    session["member_name"] = member.name
+    session["member_role"] = member.role
+    
     return jsonify({
-        "access_token": access_token,
-        "family_id": family.id
+        "success": True,
+        "member": {
+            "id": member.id,
+            "name": member.name,
+            "role": member.role
+        }
     })
+
+@bp.route("/set-password", methods=["POST"])
+def set_password():
+    if "member_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    data = request.get_json()
+    if "password" not in data:
+        return jsonify({"error": "Password required"}), 400
+    
+    member = Member.query.get(session["member_id"])
+    if not member or member.family_id != session["family_id"]:
+        return jsonify({"error": "Member not found"}), 404
+    
+    if member.role != "parent":
+        return jsonify({"error": "Only parents can set passwords"}), 403
+    
+    member.set_password(data["password"])
+    db.session.commit()
+    return jsonify({"success": True})
