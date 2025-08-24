@@ -1,26 +1,25 @@
 from flask import Flask
-from flask_cors import CORS
-from .config import DevelopmentConfig
-from .extensions import db, migrate
+from .schema import schema
+from flask_graphql import GraphQLView
+from .extensions import db_session
 
-from .routes.family_route import bp as family_bp
-from .routes.auth_route import bp as auth_bp
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "secret-key"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"
+
+app.add_url_rule("/graphql", 
+                    view_func=GraphQLView.as_view(
+                        "graphql",
+                        graphiql=True,
+                        schema=schema
+                    ))
 
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app)
-    app.config.from_object(DevelopmentConfig)
 
-    db.init_app(app)
-    migrate.init_app(app, db)
-
-    app.register_blueprint(family_bp)
-    app.register_blueprint(auth_bp)
-
-    return app
-
-app = create_app()
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
 
 if __name__ == "__main__":
     app.run(debug=True)

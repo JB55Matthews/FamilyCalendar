@@ -1,5 +1,9 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from sqlalchemy.orm import (scoped_session, sessionmaker)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
 
-db = SQLAlchemy()
-migrate = Migrate()
+engine = create_engine('sqlite:///data.db')
+db_session = scoped_session(sessionmaker(bind=engine))
+
+Base = declarative_base()
+Base.query = db_session.query_property()
