@@ -25,7 +25,7 @@ class MemberModel(Base):
     family_id = Column(Integer, ForeignKey("familys.id"), nullable=False)
     name = Column(String(80), nullable=False)
     role = Column(String(20), nullable=False) # "parent" or "child"
-    password = Column(String(200))
+    password_hash = Column(String(200))
 
     family = relationship("FamilyModel", back_populates="members")
 
