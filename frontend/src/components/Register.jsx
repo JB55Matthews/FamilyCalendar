@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { useNavigate } from "react-router-dom";
+import "../../styles/Register.css"
 
 function Register() {
 
@@ -31,7 +32,7 @@ function Register() {
             const json = await response.json();
             if(json.data.createFamily.ok){
                 const id = json.data.createFamily.family.id
-                navigate("/homepage/${id}")
+                navigate("/memberspage/${id}")
             } else {
                 setError("Email already registered")
             }
@@ -42,24 +43,33 @@ function Register() {
 
 
     return(
-        <div>
+        <div className="container">
             <div className="topLabel">Family Register</div>
-            <div className="label">Email</div>
-            <input
-                type="text"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-            />
-            <div className="label">Password</div>
-            <input
-                type="text"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-            />
-            <button onClick={handleRegister}>Register</button>
-
+            <br/>
+            <div className="inputContainer">
+                <div className="label">Email: </div>
+                <input
+                    type="text"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+            </div>
+            <br/>
+            <div className="inputContainer">
+                <div className="label">Password: </div>
+                <input
+                    type="text"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
+            </div>
+            <br/>
+            <div className="inputContainer">
+                <button onClick={handleRegister}>Register</button>
+                <button onClick={() => navigate("/")}>Login Page</button>
+            </div>
             {error && <p style={{ color: "red" }}>{error}</p>}
 
         </div>

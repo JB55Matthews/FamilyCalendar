@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { useNavigate } from "react-router-dom";
+import "../../styles/Login.css"
 
 function Login(){
     const [email, setEmail] = useState("");
@@ -27,7 +28,7 @@ function Login(){
             const json = await response.json();
             if(json.data.idByFamilyLogin){
                 const id = json.data.idByFamilyLogin.id
-                navigate("/homepage/${id}")
+                navigate("/memberspage/${id}")
             } else {
                 setError("Invalid email or password")
             }
@@ -38,26 +39,33 @@ function Login(){
 
 
     return(
-        <div>
+        <div className="container">
             <div className="topLabel">Family Login</div>
-            <div className="label">Email</div>
-            <input
-                type="text"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-            />
-            <div className="label">Password</div>
-            <input
-                type="text"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-            />
-            <button onClick={handleLogin}>Login</button>
-
-            <button onClick={() => navigate("/register")}>Register</button>
-
+            <br/>
+            <div className="inputContainer">
+                <div className="label">Email: </div>
+                <input
+                    type="text"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+            </div>
+            <br />
+            <div className="inputContainer">
+                <div className="label">Password: </div>
+                <input
+                    type="text"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
+            </div>
+            <br/>
+            <div className="inputContainer">
+                <button onClick={handleLogin}>Login</button>
+                <button onClick={() => navigate("/register")}>Register</button>
+            </div>
             {error && <p style={{ color: "red" }}>{error}</p>}
 
         </div>

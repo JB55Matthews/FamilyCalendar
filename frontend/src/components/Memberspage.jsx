@@ -1,14 +1,15 @@
 import React from "react"
 import { useParams } from "react-router-dom"
+import "../../styles/Memberspage.css"
 
-function Homepage() {
+function Memberspage() {
     const {familyId} = useParams()
 
     return (
         <div>
-            homepage
+            memebrspage
         </div>
     )
 }
 
-export default Homepage
+export default Memberspage
